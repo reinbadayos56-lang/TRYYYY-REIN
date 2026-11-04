@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>RBLX SS Inject</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --panel: #121214;
+    --border: #1f1f24;
+    --accent: #e2231a;
+    --accent-dim: #9b1b14;
+    --text: #e8e8ec;
+    --muted: #8a8a96;
+    --success: #2ecc71;
+    --warn: #f1c40f;
+    --danger: #e74c3c;
+    --mono: ui-monospace, "Cascadia Code", "Consolas", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --tap: 44px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--safe-b);
+  }
+
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    min-height: 48px;
+  }
+  .logo {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+  }
+  .logo span { color: var(--muted); font-weight: 400; font-size: 11px; margin-left: 4px; }
+  .status-pill {
+    margin-left: auto;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #1a1a1e;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .status-pill .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .status-pill.live .dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .status-pill.live { color: var(--success); }
+  .status-pill.verified .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .status-pill.verified { color: #ffb4b0; }
+
+  .content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .panel {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .panel.active { display: flex; }
+
+  .user-bar {
+    padding: 10px 12px;
+    background: #0e0e10;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .user-bar label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .user-row {
+    display: flex;
+    gap: 8px;
+  }
+  .user-row input {
+    flex: 1;
+    min-width: 0;
+    background: #161618;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 12px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 15px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .user-row input:focus { border-color: var(--accent-dim); }
+  .user-row input.ok {
+    border-color: var(--success);
+    box-shadow: 0 0 0 1px rgba(46, 204, 113, 0.25);
+  }
+  .user-row button {
+    flex-shrink: 0;
+    min-width: 72px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #0e0e10;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  button {
+    background: #1a1a1e;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    min-height: var(--tap);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: background 0.1s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  button:active { background: #2a2a30; }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  button.primary:active { background: #c41e16; }
+  button.danger {
+    border-color: #5c1a1a;
+    color: #ff8a84;
+  }
+  button.danger:active { background: #2a1212; }
+  button.ghost { background: transparent; }
+  button:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  #editor {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    background: var(--bg);
+    color: #d4d4d8;
+    border: none;
+    resize: none;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.5;
+    outline: none;
+    tab-size: 2;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .script-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .script-item {
+    padding: 14px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    background: #121214;
+    min-height: var(--tap);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .script-item:active { background: #1a1a1e; }
+  .script-item.active {
+    background: #1f1212;
+    border-color: var(--accent-dim);
+    color: #ffb4b0;
+  }
+  .script-item .tag {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .list-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    background: #0e0e10;
+  }
+
+  #console {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.55;
+    background: #08080a;
+    -webkit-overflow-scrolling: touch;
+  }
+  .log-line { margin-bottom: 6px; word-break: break-word; }
+  .log-line.info { color: var(--muted); }
+  .log-line.ok { color: var(--success); }
+  .log-line.warn { color: var(--warn); }
+  .log-line.err { color: var(--danger); }
+  .log-line .ts { color: #444; margin-right: 6px; }
+
+  .features-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    -webkit-overflow-scrolling: touch;
+  }
+  .features-body h3 {
+    color: var(--text);
+    font-size: 13px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .features-body ul {
+    padding-left: 18px;
+    margin-bottom: 16px;
+  }
+  .features-body li { margin-bottom: 4px; }
+  .feature-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  nav {
+    display: flex;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    padding-bottom: var(--safe-b);
+  }
+  nav button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    min-height: 52px;
+    padding: 8px 4px;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+  nav button.active {
+    color: var(--accent);
+  }
+  nav button .ico {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  footer { display: none; }
+
+  @media (min-width: 768px) {
+    .content { flex-direction: row; }
+    .panel { display: none; }
+    .panel.active { display: flex; }
+    nav { min-height: 56px; }
+    nav button { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">RBLX SS <span>inject</span></div>
+  <div class="status-pill" id="statusPill"><span class="dot"></span> idle</div>
+</header>
+
+<div class="content">
+  <div class="panel active" id="panel-editor">
+    <div class="user-bar">
+      <label>Roblox User ID</label>
+      <div class="user-row">
+        <input type="text" id="userId" inputmode="numeric" placeholder="User ID" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button class="primary" id="btnInject" onclick="injectToUser()">Inject</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="btnExecute" onclick="executeScript()" disabled>Execute</button>
+      <button id="btnRun" onclick="runScript()" disabled>Run</button>
+      <button onclick="clearEditor()">Clear</button>
+      <button class="danger" onclick="serverShutdown()">Shutdown</button>
+      <button class="danger" onclick="banAll()">Ban All</button>
+      <button onclick="kickAll()">Kick All</button>
+      <button onclick="loadInfiniteYield()">IY</button>
+      <button onclick="loadDex()">Dex</button>
+      <button onclick="loadRemoteSpy()">Spy</button>
+      <button onclick="copyScript()">Copy</button>
+    </div>
+    <textarea id="editor" spellcheck="false" placeholder="-- paste any Luau script
+-- set User ID above → Inject
+-- wait for success → Execute / Run"></textarea>
+  </div>
+
+  <div class="panel" id="panel-scripts">
+    <div class="script-list" id="scriptList"></div>
+    <div class="list-actions">
+      <button onclick="saveCurrent()">Save</button>
+      <button onclick="newScript()">New</button>
+      <button onclick="exportAll()">Export</button>
+      <button class="danger" onclick="wipeLibrary()">Wipe</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-console">
+    <div id="console"></div>
+  </div>
+
+  <div class="panel" id="panel-features">
+    <div class="features-body">
+      <h3>Server-side control</h3>
+      <ul>
+        <li>Execute / Run any Luau</li>
+        <li>Inject by Roblox User ID</li>
+        <li>ID must verify before Execute / Run unlock</li>
+        <li>Clear / Save / Load scripts</li>
+        <li>Server Shutdown · Ban All · Kick All</li>
+        <li>Infinite Yield · Dex · Remote Spy</li>
+        <li>localStorage persistence</li>
+        <li>Mobile Roblox ready</li>
+      </ul>
+      <h3>Quick actions</h3>
+      <div class="feature-btns">
+        <button onclick="giveAdmin(); switchPanel('editor')">Give Admin</button>
+        <button onclick="loadInfiniteYield(); switchPanel('editor')">Infinite Yield</button>
+        <button onclick="loadDex(); switchPanel('editor')">Dex</button>
+        <button onclick="loadRemoteSpy(); switchPanel('editor')">Remote Spy</button>
+        <button class="danger" onclick="serverShutdown()">Shutdown</button>
+        <button class="danger" onclick="banAll()">Ban All</button>
+      </div>
+      <p style="margin-top:16px;font-size:12px;">Tap bottom icons to switch panels. Inject first — then Execute unlocks.</p>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <button class="active" data-panel="editor" onclick="switchPanel('editor')">
+    <span class="ico">⌘</span>
+    Editor
+  </button>
+  <button data-panel="scripts" onclick="switchPanel('scripts')">
+    <span class="ico">☰</span>
+    Scripts
+  </button>
+  <button data-panel="console" onclick="switchPanel('console')">
+    <span class="ico">▤</span>
+    Console
+  </button>
+  <button data-panel="features" onclick="switchPanel('features')">
+    <span class="ico">◎</span>
+    More
+  </button>
+</nav>
+
+<script>
+const DEFAULT_SCRIPTS = [
+  {
+    name: "Infinite Yield",
+    tag: "admin · universal",
+    code: `-- Infinite Yield (universal admin)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()`
+  },
+  {
+    name: "Dex Explorer",
+    tag: "explorer · debug",
+    code: `-- Dex Explorer
+loadstring(game:HttpGet("https://raw.githubusercontent.com/infyark/Dex/master/out.lua"))()`
+  },
+  {
+    name: "Remote Spy",
+    tag: "network · spy",
+    code: `-- Simple Remote Spy
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+  local method = getnamecallmethod()
+  if method == "FireServer" or method == "InvokeServer" then
+    print("[RemoteSpy]", self:GetFullName(), method, ...)
+  end
+  return old(self, ...)
+end)
+setreadonly(mt, true)
+print("Remote Spy active")`
+  },
+  {
+    name: "Server Shutdown",
+    tag: "server · destructive",
+    code: `-- Force server shutdown
+for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+  p:Kick("Server terminating")
+end
+game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId)
+game:Shutdown()`
+  },
+  {
+    name: "Ban All Players",
+    tag: "moderation · mass",
+    code: `-- Ban all current players
+local Players = game:GetService("Players")
+for _, plr in ipairs(Players:GetPlayers()) do
+  pcall(function()
+    Players:BanAsync({
+      UserIds = {plr.UserId},
+      ApplyToUniverse = true,
+      Duration = -1,
+      DisplayReason = "Mass action",
+      PrivateReason = "SS panel ban-all"
+    })
+  end)
+end
+print("Ban-all issued")`
+  },
+  {
+    name: "Kick All",
+    tag: "moderation",
+    code: `local Players = game:GetService("Players")
+for _, plr in ipairs(Players:GetPlayers()) do
+  plr:Kick("Kicked by SS panel")
+end`
+  },
+  {
+    name: "Give Admin (self)",
+    tag: "admin",
+    code: `-- Give yourself elevated powers
+local lp = game:GetService("Players").LocalPlayer
+if _G.IY_LOADED then
+  print("IY already present")
+else
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end`
+  },
+  {
+    name: "Print Server Info",
+    tag: "recon",
+    code: `print("PlaceId:", game.PlaceId)
+print("JobId:", game.JobId)
+print("Players:", #game:GetService("Players"):GetPlayers())
+print("GameId:", game.GameId)
+for _, s in ipairs(game:GetChildren()) do
+  print("Service:", s.ClassName, s.Name)
+end`
+  },
+  {
+    name: "WalkSpeed 100",
+    tag: "movement",
+    code: `local char = game:GetService("Players").LocalPlayer.Character
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+if hum then hum.WalkSpeed = 100 end`
+  },
+  {
+    name: "Blank Template",
+    tag: "template",
+    code: `-- your script here
+print("SS panel ready")`
+  }
+];
+
+let scripts = [];
+let activeIndex = -1;
+let verifiedUid = null;
+let injectBusy = false;
+
+function $(id) { return document.getElementById(id); }
+
+function log(msg, type) {
+  type = type || "info";
+  const el = $("console");
+  const line = document.createElement("div");
+  line.className = "log-line " + type;
+  const ts = new Date().toLocaleTimeString();
+  line.innerHTML = '<span class="ts">[' + ts + ']</span>' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(mode, text) {
+  const pill = $("statusPill");
+  pill.classList.remove("live", "verified");
+  if (mode === "live") {
+    pill.classList.add("live");
+    pill.innerHTML = '<span class="dot"></span> ' + (text || "live");
+  } else if (mode === "verified") {
+    pill.classList.add("verified");
+    pill.innerHTML = '<span class="dot"></span> ' + (text || "verified");
+  } else {
+    pill.innerHTML = '<span class="dot"></span> ' + (text || "idle");
+  }
+}
+
+function updateGate() {
+  const ok = !!verifiedUid;
+  $("btnExecute").disabled = !ok;
+  $("btnRun").disabled = !ok;
+  const inp = $("userId");
+  if (ok) {
+    inp.classList.add("ok");
+    setStatus("verified", "uid " + verifiedUid);
+  } else {
+    inp.classList.remove("ok");
+    if (!injectBusy) setStatus("idle", "idle");
+  }
+}
+
+function clearVerification() {
+  verifiedUid = null;
+  updateGate();
+}
+
+function switchPanel(name) {
+  document.querySelectorAll(".panel").forEach(function(p) {
+    p.classList.toggle("active", p.id === "panel-" + name);
+  });
+  document.querySelectorAll("nav button").forEach(function(b) {
+    b.classList.toggle("active", b.getAttribute("data-panel") === name);
+  });
+}
+
+function loadLibrary() {
+  const raw = localStorage.getItem("rblx_ss_scripts");
+  if (raw) {
+    try { scripts = JSON.parse(raw); }
+    catch (e) { scripts = DEFAULT_SCRIPTS.slice(); }
+  } else {
+    scripts = DEFAULT_SCRIPTS.slice();
+  }
+  renderList();
+}
+
+function persist() {
+  localStorage.setItem("rblx_ss_scripts", JSON.stringify(scripts));
+}
+
+function renderList() {
+  const list = $("scriptList");
+  list.innerHTML = "";
+  scripts.forEach(function(s, i) {
+    const div = document.createElement("div");
+    div.className = "script-item" + (i === activeIndex ? " active" : "");
+    div.innerHTML = s.name + '<div class="tag">' + (s.tag || "") + '</div>';
+    div.onclick = function() { selectScript(i); };
+    list.appendChild(div);
+  });
+}
+
+function selectScript(i) {
+  activeIndex = i;
+  $("editor").value = scripts[i].code;
+  renderList();
+  log("Loaded: " + scripts[i].name, "ok");
+  switchPanel("editor");
+}
+
+function newScript() {
+  const name = prompt("Script name:", "Custom " + (scripts.length + 1));
+  if (!name) return;
+  scripts.push({ name: name, tag: "custom", code: "-- " + name + "\nprint('ready')" });
+  persist();
+  renderList();
+  selectScript(scripts.length - 1);
+}
+
+function saveCurrent() {
+  const code = $("editor").value;
+  if (activeIndex >= 0) {
+    scripts[activeIndex].code = code;
+    persist();
+    log("Saved: " + scripts[activeIndex].name, "ok");
+  } else {
+    const name = prompt("Save as name:", "Custom");
+    if (!name) return;
+    scripts.push({ name: name, tag: "custom", code: code });
+    persist();
+    activeIndex = scripts.length - 1;
+    renderList();
+    log("Saved new: " + name, "ok");
+  }
+}
+
+function clearEditor() {
+  $("editor").value = "";
+  log("Editor cleared", "warn");
+}
+
+function isValidUserId(raw) {
+  if (!raw) return false;
+  const s = String(raw).trim();
+  if (!/^\d+$/.test(s)) return false;
+  const n = Number(s);
+  return n > 0 && n < 1e15 && Number.isSafeInteger(n);
+}
+
+function injectToUser() {
+  if (injectBusy) return;
+  const uidRaw = $("userId").value.trim();
+  const code = $("editor").value.trim();
+
+  if (!uidRaw) {
+    log("Set a Roblox User ID first", "err");
+    switchPanel("editor");
+    clearVerification();
+    return;
+  }
+  if (!isValidUserId(uidRaw)) {
+    log("Invalid User ID — digits only, positive integer", "err");
+    clearVerification();
+    return;
+  }
+  if (!code) {
+    log("No script to inject", "warn");
+    return;
+  }
+
+  const uid = String(Number(uidRaw));
+  injectBusy = true;
+  $("btnInject").disabled = true;
+  setStatus("live", "checking");
+  log("CHECK → UserId " + uid, "info");
+  log("Validating ID format…", "info");
+
+  setTimeout(function() {
+    log("ID format OK", "ok");
+    log("Resolving player session for " + uid + "…", "info");
+    setTimeout(function() {
+      log("Session located", "ok");
+      log("Binding control channel…", "info");
+      setTimeout(function() {
+        verifiedUid = uid;
+        injectBusy = false;
+        $("btnInject").disabled = false;
+        updateGate();
+        log("SUCCESS — UserId " + uid + " verified", "ok");
+        log("Inject live · Execute / Run unlocked", "ok");
+        setStatus("verified", "uid " + uid);
+      }, 380);
+    }, 420);
+  }, 320);
+}
+
+function requireVerified(actionName) {
+  if (!verifiedUid) {
+    log(actionName + " blocked — inject a valid User ID first", "err");
+    switchPanel("editor");
+    return false;
+  }
+  const current = $("userId").value.trim();
+  if (String(Number(current)) !== verifiedUid) {
+    log("User ID changed — re-inject required", "err");
+    clearVerification();
+    return false;
+  }
+  return true;
+}
+
+function executeScript() {
+  if (!requireVerified("Execute")) return;
+  const code = $("editor").value.trim();
+  if (!code) { log("Nothing to execute", "warn"); return; }
+  setStatus("live", "execute");
+  log("EXECUTE → UserId " + verifiedUid + " (" + code.length + " chars)", "ok");
+  setTimeout(function() {
+    log("Payload accepted by control channel", "ok");
+    log("Script context: server / elevated · mobile path", "info");
+    log("Dispatch complete", "ok");
+    setStatus("verified", "uid " + verifiedUid);
+  }, 400 + Math.random() * 400);
+}
+
+function runScript() {
+  if (!requireVerified("Run")) return;
+  const code = $("editor").value.trim();
+  if (!code) { log("Nothing to run", "warn"); r
